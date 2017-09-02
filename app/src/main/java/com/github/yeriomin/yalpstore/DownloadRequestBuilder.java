@@ -5,6 +5,7 @@ import android.app.DownloadManager;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
+import android.util.Log;
 
 import com.github.yeriomin.playstoreapi.AndroidAppDeliveryData;
 import com.github.yeriomin.playstoreapi.HttpCookie;
@@ -30,15 +31,20 @@ public abstract class DownloadRequestBuilder {
     abstract protected String getDownloadUrl();
 
     public DownloadManager.Request build() {
-        DownloadManager.Request request = new DownloadManager.Request(getDownloadUri());
-        if (deliveryData.getDownloadAuthCookieCount() > 0) {
-            HttpCookie cookie = deliveryData.getDownloadAuthCookie(0);
-            request.addRequestHeader("Cookie", cookie.getName() + "=" + cookie.getValue());
+        try {
+            DownloadManager.Request request = new DownloadManager.Request(getDownloadUri());
+            if (deliveryData.getDownloadAuthCookieCount() > 0) {
+                HttpCookie cookie = deliveryData.getDownloadAuthCookie(0);
+                request.addRequestHeader("Cookie", cookie.getName() + "=" + cookie.getValue());
+            }
+            request.setDestinationUri(getDestinationUri());
+            request.setDescription(app.getPackageName());
+            request.setTitle(getNotificationTitle());
+            return request;
+        } catch (IllegalArgumentException e) {
+            Log.e(getClass().getName(), e.getMessage() + " getDownloadUrl()=" + getDownloadUrl());
+            throw new RuntimeException(e);
         }
-        request.setDestinationUri(getDestinationUri());
-        request.setDescription(app.getPackageName());
-        request.setTitle(getNotificationTitle());
-        return request;
     }
 
     private Uri getDestinationUri() {
@@ -46,6 +52,6 @@ public abstract class DownloadRequestBuilder {
     }
 
     private Uri getDownloadUri() {
-        return Uri.parse(getDownloadUrl());
+        return Uri.parse(getDownloadUrl().trim());
     }
 }
